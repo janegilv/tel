@@ -563,16 +563,16 @@ sub enable {
     my $profile = $self->profile;
 
     if ($profile->{enablecmd}) {
-        $self->send($profile->{enablecmd} . "\r");
-
         $profile->{ena_username_prompt} ||= qr/[Uu]ser[Nn]ame:|Login:/;
         $profile->{ena_password_prompt} ||= qr/[Pp]ass[Ww]ord/;
-
+        
         # we need to be able to handle routers that prompt for username and password
         # need to check the results to see if enable succeeded
         $self->expect($self->{timeout},
                 [ $profile->{ena_username_prompt} => sub { $self->send("$profile->{user}\r"); exp_continue; } ],
-                [ $profile->{ena_password_prompt} => sub { $self->send($self->password('enable') . "\r"); } ]
+                [ $profile->{ena_password_prompt} => sub { $self->send($self->password('enable') . "\r"); } ],
+                [ $profile->{prompt} => sub { $self->{enabled}=1; $self->send("\r"); } ],
+                [ $profile->{disabledprompt} => sub { $self->send("$profile->{enablecmd}\r"); exp_continue; } ]
         );
     }
 
